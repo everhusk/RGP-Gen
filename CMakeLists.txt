@@ -27,6 +27,9 @@ if(UNIX OR MINGW)
   SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-ffast-math -fno-common -ffloat-store")
 endif()
 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/fluids" DESTINATION "${CMAKE_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/mixtures" DESTINATION "${CMAKE_BINARY_DIR}")
+
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/fortran")
 add_library(REFPRP64 SHARED ${refprop_files})
 add_executable(RGPTableGen ${refprop_files} "${CMAKE_CURRENT_SOURCE_DIR}/RGP.f90")

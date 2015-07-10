@@ -20,16 +20,17 @@ PROGRAM RGP
       &tsat(:),hsat(:),wsat(:),vsat(:),cvsat(:),cpsat(:),ssat(:),dPdvsat(:),etasat(:),tcxsat(:), &
       &tsat2(:),hsatl(:),wsatl(:),rhosatl(:),cvsatl(:),cpsatl(:),ssatl(:),dPdrhosatl(:),etasatl(:),tcxsatl(:), &
       &psat2(:),hsatv(:),wsatv(:),rhosatv(:),cvsatv(:),cpsatv(:),ssatv(:),dPdrhosatv(:),etasatv(:),tcxsatv(:), &
-      &blank1(:),blank2(:)
+      &blank1(:),blank2(:),arr(:)
       double precision :: acf,conp,conv,conpl,convl,conpv,convv,cpcrit,cvcrit,density,dpdrho,q,rgas,rhocrit,rhol,rhov, &
       &dc,dip,dl,dm,dmax,dpdrhol,dpdrhov,dv,e,enthalpy,enthalpyl,enthalpyv,pstep,pstepsat,scrit,speedcrit, &
       &entropy,entropyl,entropyv,hcrit,htyp,pc,pm,pmax,pmaxsat,pminsat,psat,preslower,upperPres,speedOsound, &
       &speedOsoundl,speedOsoundv,supercool,tc,templower,uppertemp,TminSat,TmaxSat,thermalconductivity,thermalconductivityl, &
       &thermalconductivityv,thermcrit,tliq,tm,tmax,tmin,tnbp,tpp,ttp,tstep,tvap,visccrit,viscosity,viscosityl,viscosityv,wm, &
-      &y,zc
-      
-      integer :: i,j,ierr,kq,np,nt,nsat,npsat
+      &y,zc,dbl
+      integer :: i,j,ierr,kq,np,nt,nsat,npsat,ilng
       character :: hrf*3, herr*255, lfluid*30, loutfile*30
+      character :: lFileName*255, hnam*12, hn80*80, hstr*255
+      character :: hcasn*12
       character(LEN=255) :: hf(ncmax)
       character*7 hfmix
       integer :: prevStatus
@@ -56,23 +57,27 @@ PROGRAM RGP
       READ (*,*) lOutfile
       OPEN(UNIT=10,FILE=lOutFile,STATUS='NEW')
       lfluid='SCO2'
-      hf(1)='CO2.fld'
+      WRITE(*,'(A)') 'Fluid file name (i.e. filename.fld):'
+      READ (*,*) lFileName
+      hf(1)=lFileName
       hfmix='hmx.bnc'
       hrf='DEF'
       CALL SETUP (i,hf,hfmix,hrf,ierr,herr)
       IF (ierr.ne.0) write (*,*) herr
       CALL INFO (1,wm,ttp,tnbp,tc,pc,dc,zc,acf,dip,rgas)
+      CALL NAME (1,hnam,hn80,hcasn)
+      Call PASSCMN ('ptpn',0,1,0, hstr,ilng,tpp,arr,ierr,herr)
       dc=wm*dc!Convert density to kg/m^3
       Dmax=wm*Dmax
-      tpp = 517.95 !kPa *********** ADDED FROM CO2.FLD *******
+      !tpp = 517.95 !kPa *********** ADDED FROM CO2.FLD *******
       WRITE(*,*)
-      WRITE(*,*) 'CARBON DIOXIDE (CO2):'
-      WRITE(*,*)
+      WRITE(*,*) 'hnam',hnam 
+      WRITE(*,*) 'hn80',hn80
       WRITE(*,*) 'Molecular Weight:                 ',wm,'g/mol'
 !     WRITE(*,*) 'Accentric Factor [-]: ',acf SETUP error
 !     WRITE(*,*) 'Dipole Moment [debye]: ',dip
       WRITE(*,*) 'Triple Point Temperature:         ',ttp,'K'
-      WRITE(*,*) 'Triple Point Pressure:            ',tpp,'kPa' ! ADDED FROM CO2.FLD *****
+      WRITE(*,*) 'Triple Point Pressure:            ',tpp,'kPa'
       WRITE(*,*) 'Normal Boiling Point:             ',tnbp,'K'
       
       WRITE(*,*) 'Critical Temperature:             ',tc,'K'
@@ -87,7 +92,7 @@ PROGRAM RGP
       WRITE(*,*)
       WRITE(*,*)'Min Temperature:                  ',tmin,'K'
       WRITE(*,*)'Max Temperature:                  ',tmax,'K'
-      WRITE(*,*)'Max Saturation temperature:  ',tm,'K'
+      WRITE(*,*)'Max Saturation temperature:        ',tm,'K'
       WRITE(*,*)'Max Density:                      ',Dmax,'kg/m^3'
       WRITE(*,*)'Max Pressure:                     ',pmax,'kPa'
       
@@ -122,14 +127,14 @@ PROGRAM RGP
       
       ! SETUP OUTPUT FILE 
       WRITE(10,901)' $$$$HEADER'
-      WRITE(10,901)' $$$SCO2'!,lfluid !character*8 (key into the RGP file see NOTE 3)  if this program is used with a fluid other than CO2, this line will need to be changed, along with the corresponding line in the $$$DATA header
+      WRITE(10,901)' $$$',hnam!,lfluid !character*8 (key into the RGP file see NOTE 3)  if this program is used with a fluid other than CO2, this line will need to be changed, along with the corresponding line in the $$$DATA header
       WRITE(10,*) 1!enter an integer (this line is ignored in ANSYS CFX)
       WRITE(10,901)'$$PARAM'! See NOTE 4
       WRITE(10,*) 26!enter an integer(number of parameters)
       WRITE(10,901)'DESCRIPTION'
       WRITE(10,901)'Carbon Dioxide from NIST'!character*50(description of the material)
       WRITE(10,901)'NAME'
-      WRITE(10,901)'SCO2'!lfluid!character*8(material name, same as $$$<component>)
+      WRITE(10,901)hnam!lfluid!character*8(material name, same as $$$<component>)
       WRITE(10,901)'INDEX'
       WRITE(10,901)'SCO2'!lfluid!character*50 (index into clients RGDB program)
       WRITE(10,901)'DATABASE'                                      

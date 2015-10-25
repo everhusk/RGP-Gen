@@ -62,4 +62,4 @@ include_directories("${REFPROP_BASE_PATH}/fortran")
 # Use common core method
 add_library(REFPROPObjects OBJECT ${refprop_files})
 add_library(REFPRP64 SHARED $<TARGET_OBJECTS:REFPROPObjects>)
-add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGP.f90")
+add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGPgenerator.F90")

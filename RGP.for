@@ -470,7 +470,7 @@ contains
             write(10,901)TRIM(lfluid)//' from NIST'!character*50(description of the material)
             write(10,901)'NAME'
             write(10,901)TRIM(lfluid)              !character*8(material name, same as $$$<component>)
-            write(10,901)'inDEX'
+            write(10,901)'INDEX'
             write(10,901)TRIM(lfluid)              !character*50 (index into clients RGDB program)                              
             write(10,901)'MODEL'                                      
             write(10,*)3                           !integer (level of property info available 1,2,or 3)

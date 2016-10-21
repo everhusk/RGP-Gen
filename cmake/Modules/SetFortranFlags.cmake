@@ -99,13 +99,13 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                 )
 
 # Check array bounds
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran "-check bounds"  # Intel
-                         "/check:bounds"  # Intel Windows
-                         "-fcheck=bounds" # GNU (New style)
-                         "-fbounds-check" # GNU (Old style)
-                         "-Mbounds"       # Portland Group
-                )
+#SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+#                 Fortran "-check bounds"  # Intel
+#                         "/check:bounds"  # Intel Windows
+#                         "-fcheck=bounds" # GNU (New style)
+#                         "-fbounds-check" # GNU (Old style)
+#                         "-Mbounds"       # Portland Group
+#                )
 
 #####################
 ### TESTING FLAGS ###

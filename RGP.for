@@ -465,64 +465,67 @@ contains
             write(10,901)'$$$'//TRIM(lfluid)       !character*8 (key into the RGP file see NOTE 3)  if this program is used with a fluid other than CO2, this line will need to be changed, along with the corresponding line in the $$$DATA header
             write(10,*) 1                          !enter an integer (this line is ignored in ANSYS CFX)
             write(10,901)'$$PARAM'                 ! See NOTE 4
-            write(10,*) 26                         !enter an integer(number of parameters)
-            write(10,901)'DESCRIPTION'
+            write(10,*) 28                         !enter an integer(number of parameters)
+            write(10,901)'DESCRIPTION'             ! 1
             write(10,901)TRIM(lfluid)//' from NIST'!character*50(description of the material)
-            write(10,901)'NAME'
+            write(10,901)'NAME'                    ! 2
             write(10,901)TRIM(lfluid)              !character*8(material name, same as $$$<component>)
-            write(10,901)'INDEX'
-            write(10,901)TRIM(lfluid)              !character*50 (index into clients RGDB program)                              
-            write(10,901)'MODEL'                                      
+            write(10,901)'INDEX'                   ! 3
+            write(10,901)TRIM(lfluid)              !character*50 (index into clients RGDB program)     
+            write(10,901)'DATABASE'                ! 4
+            write(10,901)'NIST REFPROP'
+            write(10,901)'MODEL'                   ! 5                 
             write(10,*)3                           !integer (level of property info available 1,2,or 3)
-            write(10,901)'UNITS'                                      
+            write(10,901)'UNITS'                   ! 6                   
             write(10,*)1                           !integer(unit system of 1 ,2,3,4 or 5)
-            write(10,901)'PMIN_SUPERHEAT'          ! at Triple Point Pressure?
-            write(10,900)PresLower                 !real (Pa)
-            write(10,901)'PMAX_SUPERHEAT'          !  at Critical Pressure?
-            write(10,900)UpperPres                 !real (Pa)
-            write(10,901)'TMIN_SUPERHEAT'          ! at  Triple Point Temperature?
-            write(10,900)TempLower                 !real (K)
-            write(10,901)'TMAX_SUPERHEAT'          ! at Critical Temperature?
-            write(10,900)UpperTemp                 !real (K)
-            write(10,901)'TMIN_SATURATION'
+            write(10,901)'PMIN_SUPERHEAT'          ! 7
+            write(10,900)PresLower                 !real (Pa) at Triple Point Pressure?
+            write(10,901)'PMAX_SUPERHEAT'          ! 8
+            write(10,900)UpperPres                 !real (Pa) at Critical Pressure?
+            write(10,901)'TMIN_SUPERHEAT'          ! 9
+            write(10,900)TempLower                 !real (K) at  Triple Point Temperature?
+            write(10,901)'TMAX_SUPERHEAT'          ! 10
+            write(10,900)UpperTemp                 !real (K) at Critical Temperature?
+            write(10,901)'TMIN_SATURATION'         ! 11
             write(10,900)TminSat
-            write(10,901)'TMAX_SATURATION'
+            write(10,901)'TMAX_SATURATION'         ! 12
             write(10,900)TmaxSat
-            write(10,901)'SUPERCOOLING'
+            write(10,901)'SUPERCOOLING'            ! 13
             write(10,900)SuperCool                 !real(supercooling level in superheat tables)(Optional)
-            write(10,901)'P_CRITICAL'
+            write(10,901)'P_CRITICAL'              ! 14
             write(10,900)Pc*1000                   !real
-            write(10,901)'P_TRIPLE'                ! See NOTE 7
-            write(10,900)tpp*1000!real
-            write(10,901)'T_CRITICAL'
-            write(10,900)Tc!real
-            write(10,901)'T_TRIPLE'
-            write(10,900)Ttp!real
-            write(10,901)'GAS_CONSTANT'
-            write(10,900)rgas*1000/wm!real
+            write(10,901)'P_TRIPLE'                ! 15 See NOTE 7
+            write(10,900)tpp*1000                  !real
+            write(10,901)'T_CRITICAL'              ! 16
+            write(10,900)Tc                        !real
+            write(10,901)'T_TRIPLE'                ! 17
+            write(10,900)Ttp                       !real
+            write(10,901)'GAS_CONSTANT'            ! 18
+            write(10,900)rgas*1000/wm              !real
             
-            write(10,901)'TABLE_1'!See NOTE 8
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_2'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_3'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_4'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_5'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_6'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_7'
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_8'!		See NOTE 9
-            write(10,*)nt,np!integer
-            write(10,901)'TABLE_9'
-            write(10,*)nt,np!integer
-            write(10,901)'SAT_TABLE'
-            write(10,*)npsat,4,9 !integer
-            write(10,901)'$$SUPER_TABLE'
-            write(10,*)9 !integer (number of superheat tables, nn = 9)
+            write(10,901)'TABLE_1'                 ! 19 See NOTE 8
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_2'                 ! 20
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_3'                 ! 21
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_4'                 ! 22
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_5'                 ! 23
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_6'                 ! 24
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_7'                 ! 25
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_8'                 ! 26 See NOTE 9
+            write(10,*)nt,np                       !integer
+            write(10,901)'TABLE_9'                 ! 27
+            write(10,*)nt,np                       !integer
+            write(10,901)'SAT_TABLE'               ! 28
+            write(10,*)npsat,4,9                   !integer
+            
+            if (i .eq. 2) write(10,901)'$$SUPER_TABLE'
+            if (i .eq. 2) write(10,*)9 !integer (number of superheat tables, nn = 9)
 
             ! Output format units
             900   format (5ES17.7E3)

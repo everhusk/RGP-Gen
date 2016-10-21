@@ -476,15 +476,15 @@ contains
             write(10,*)3                           !integer (level of property info available 1,2,or 3)
             write(10,901)'UNITS'                                      
             write(10,*)1                           !integer(unit system of 1 ,2,3,4 or 5)
-            write(10,901)'PMin_SUPERHEAT'          ! at Triple Point Pressure?
+            write(10,901)'PMIN_SUPERHEAT'          ! at Triple Point Pressure?
             write(10,900)PresLower                 !real (Pa)
             write(10,901)'PMAX_SUPERHEAT'          !  at Critical Pressure?
             write(10,900)UpperPres                 !real (Pa)
-            write(10,901)'TMin_SUPERHEAT'          ! at  Triple Point Temperature?
+            write(10,901)'TMIN_SUPERHEAT'          ! at  Triple Point Temperature?
             write(10,900)TempLower                 !real (K)
             write(10,901)'TMAX_SUPERHEAT'          ! at Critical Temperature?
             write(10,900)UpperTemp                 !real (K)
-            write(10,901)'TMin_SATURATION'
+            write(10,901)'TMIN_SATURATION'
             write(10,900)TminSat
             write(10,901)'TMAX_SATURATION'
             write(10,900)TmaxSat

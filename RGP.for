@@ -75,10 +75,10 @@ program RGP
     write(*,*)'Allocating arrays...'
     call allocateArrays();
 
-    write(*,*)'Calc sat table...'
+    write(*,*)'Calculating sat table...'
     call calculateSatTable();
 
-    write(*,*)'Calc sat table...'
+    write(*,*)'Calculating super table...'
     call calculateSuperTable();
 
     write(*,*)'Writing super table...'
@@ -86,6 +86,8 @@ program RGP
 
     write(*,*)'Writing sat table...'
     call writeSatTable();
+    
+    write(*,*)'Done! Yay!'
     close(10);
 
 contains
@@ -224,9 +226,10 @@ contains
         call askQuestion('Maximum Temperature for Saturation Tables [k]:', TmaxSat)
         call askQuestion_int('Number of Steps for Saturation Tables        :', npsat)
     
-        TminSat = max(TminSat, tmin);
-        TmaxSat = min(TmaxSat, tm);
-
+        ! Tmin and Tmax ranges are fairly strict, if violated do the following
+        TminSat = max(TminSat, tmin+DBLE(0.01));
+        TmaxSat = min(TmaxSat, tm-DBLE(0.01));
+        
         ! set t and p step
         tstep = (UpperTemp-TempLower)/REAL(nt-1)
         pstep = (UpperPres-PresLower)/REAL(np-1)
@@ -797,6 +800,11 @@ contains
         implicit none;
         integer, intent(in) :: ierr
         character(len=255), intent(in) :: herr
+
+!       ierr value : flash resulted in : the results are
+!       ierr > 0   : error             : calculations not possible,
+!       ierr < 0   : warning           : results may be questionable
+        
         if (ierr .lt. 0) then
             write (*,*) herr
             call exit(-1)

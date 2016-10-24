@@ -1,65 +1,97 @@
-cmake_minimum_required(VERSION 2.8)
-project(REFPROP Fortran)
+cmake_minimum_required(VERSION 3.3)
+SET(CMAKE_BUILD_TYPE TESTING)
 
-SET (USE_OPENMP ON CACHE BOOL "Use OpenMP")
-SET (CMAKE_BUILD_TYPE "RELEASE" CACHE INTERNAL "Set test build")
-         
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-    MESSAGE(FATAL_ERROR "Fortran compiler does not support F90")
-ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-
-INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake) 
-INCLUDE(${CMAKE_MODULE_PATH}/SetParallelizationLibrary.cmake)
-find_package(PythonLibs 3 REQUIRED)
-find_package(PythonInterp)
+project(RGPTableGen Fortran)
 
 
-# running on windows and refprop is installed? then copy what we need
-if (WIN32)
-  # Set locations to store output
-  set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
-  set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}")
+if (NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
+if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
+if (NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
+
+# Build Environment
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
+
+if (NOT REFPROP_FLAGS_ADDED)
+  set(REFPROP_FLAGS_ADDED "true" CACHE INTERNAL "Has refprop flags been added?")  
   
-  # Refprop (new version) is a 64 bit binary
-  find_path(REFPROP_BASE_PATH "REFPRP64.dll" "c:/program files/REFPROP" "c:/program files (x86)/REFPROP")
+  if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
+    MESSAGE(FATAL_ERROR "Fortran compiler does not support F90")
+  else()
+    SET (CMAKE_BUILD_TYPE "TESTING" CACHE INTERNAL "Set test build")
+    INCLUDE("${CMAKE_MODULE_PATH}/SetFortranFlags.cmake") 
+    INCLUDE("${CMAKE_MODULE_PATH}/SetCompileFlag.cmake")
+  endif()
+  
+  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-fpic")
+  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-fno-common")
+  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-fall-intrinsics")
+  
+#  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-ffast-math")
+#  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "-ffloat-store")
 endif()
 
 
-if (USE_OPENMP)
-  message(STATUS "REFPROP: Each REFPROP instance may use up to ${OMP_NUM_PROCS} threads with OpenMP")
-endif()
+# Options
+SET (USE_OPENMP OFF CACHE BOOL "Use OpenMP")
 
-# Copy fluid folder to output directory
-if (REFPROP_BASE_PATH)
-  message(STATUS "REFPROP: REFPROP found at ${REFPROP_BASE_PATH}, copying/using existing fluid/fortran files")
-else()
-  set(REFPROP_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Code Path")
-endif()  
+find_package(PythonInterp REQUIRED)
 
-# Remove non required files 
-message("${REFPROP_BASE_PATH}")
+#####################
+# CONFIGURE REFPROP #
+#####################
+
+set(REFPROP_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Refprop code location")
+
+# Set locations to store output
+set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
+set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}") 
+
+
+# Copy REFPROP fluid files
+message(STATUS "REFPROP: REFPROP fluids found at ${REFPROP_BASE_PATH}, copying fluid files")
 file(COPY "${REFPROP_BASE_PATH}/fluids" DESTINATION "${CMAKE_BINARY_DIR}")
+message(STATUS "REFPROP: Fluid files copied")
+
+# Get fortran sources
 FILE(GLOB refprop_files   "${REFPROP_BASE_PATH}/fortran/*.FOR")
+
+# Remove non-required items
 LIST(REMOVE_ITEM refprop_files
-"${REFPROP_BASE_PATH}/fortran/COMMONS.FOR"
-"${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"
+"${REFPROP_BASE_PATH}/fortran/COMMONS.FOR" # include file
+"${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"  # include file
 "${REFPROP_BASE_PATH}/fortran/UTILITY.FOR"
 )
-execute_process(COMMAND ${PYTHON_EXECUTABLE} "patchUtility.py" "${REFPROP_BASE_PATH}/fortran/UTILITY.FOR" "${CMAKE_CURRENT_SOURCE_DIR}/UTILITY.FOR")
-LIST(APPEND refprop_files "${CMAKE_CURRENT_SOURCE_DIR}/UTILITY.FOR")
-message("${refprop_files}")
 
+# Make a copy of files (which are to be patched)
+message(STATUS "REFPROP: Patching fortran files")
+file(COPY "${REFPROP_BASE_PATH}/fortran/COMMONS.FOR" DESTINATION "${CMAKE_BINARY_DIR}/fortran")
+file(COPY "${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"  DESTINATION "${CMAKE_BINARY_DIR}/fortran")
+file(RENAME "${CMAKE_BINARY_DIR}/fortran/COMMONS.FOR" "${CMAKE_BINARY_DIR}/fortran/commons.for")
+file(RENAME "${CMAKE_BINARY_DIR}/fortran/COMTRN.FOR" "${CMAKE_BINARY_DIR}/fortran/comtrn.for")
 
-# Add some nice flags
-if(UNIX OR MINGW)
-  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}" Fortran "${CMAKE_Fortran_FLAGS} -ffast-math -fno-common -ffloat-store" FORCE)
-endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/patchUtility.py"
+                "${REFPROP_BASE_PATH}/fortran/UTILITY.FOR"
+                "${CMAKE_BINARY_DIR}/UTILITY.FOR")
+
+LIST(APPEND refprop_files "${CMAKE_BINARY_DIR}/UTILITY.FOR")
+
+# Set include directory
+include_directories("${CMAKE_BINARY_DIR}/fortran")
 
 # Setup build
 include_directories("${REFPROP_BASE_PATH}/fortran")
 
 # Use common core method
 add_library(REFPROPObjects OBJECT ${refprop_files})
-add_library(REFPRP64 SHARED $<TARGET_OBJECTS:REFPROPObjects>)
-add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGPgenerator.F90")
+add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGP.for")
+
+target_compile_options(RGPTableGen PRIVATE -std=f2008 -ffree-form)

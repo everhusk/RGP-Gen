@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 original = sys.argv[1]
@@ -8,12 +9,17 @@ newcode = """elseif (hvar.eq.'ptpn') then
         if (l) ptpn(icomp)=dbl
       elseif (hvar.eq.'txeos') then"""
 
-with open(original, 'r') as utility_file:
-  utility = utility_file.read();
-  
-utility = utility.replace("elseif (hvar.eq.'txeos') then",newcode)
+def addPTPN():
+  with open(original, 'r') as utility_file:
+    utility = utility_file.read()
+    
+  # don't patch if already patched
+  # (unlikely as we get the original file)
+  if "elseif (hvar.eq.'ptpn') then" not in utility:
+    utility = utility.replace("elseif (hvar.eq.'txeos') then",newcode)
 
-with open(dest, 'w') as utility_file:
-  utility_file.write(utility)
+  with open(dest, 'w') as utility_file:
+    utility_file.write(utility)
 
-print('patch complete')
+addPTPN()
+print('REFPROP: Patch complete', end="")

@@ -805,7 +805,7 @@ contains
 !       ierr > 0   : error             : calculations not possible,
 !       ierr < 0   : warning           : results may be questionable
         
-        if (ierr .lt. 0) then
+        if (ierr .gt. 0) then
             write (*,*) herr
             call exit(-1)
         end if

@@ -208,12 +208,9 @@ contains
         ! PROMPT FOR BOUNDS AND STEP SIZE
         write(*,*)'--------------------------------------------'
         write(*,*)
-        call askQuestion('Lower bound for Temperature [K]:', TempLower)
-        call askQuestion('Upper bound for Temperature [K]:', UpperTemp)
+        call askQuestion('Lower bound for Temperature [K]:', TempLower, tc, tmax)
+        call askQuestion('Upper bound for Temperature [K]:', UpperTemp, TempLower, tmax)
         call askQuestion_int('Number of Steps for Temperature:', nt)
-
-        TempLower = max(TempLower, tmin);
-        UpperTemp = min(UpperTemp, tmax);
 
         call askQuestion('Lower bound for Pressure [Pa]:', PresLower)
         call askQuestion('Upper bound for Pressure [Pa]:', UpperPres)
@@ -222,8 +219,8 @@ contains
         PresLower = max(PresLower, DBLE(0.0));
         UpperPres = min(UpperPres, pmax*1000);
 
-        call askQuestion('Minimum Temperature for Saturation Tables [k]:', TminSat)
-        call askQuestion('Maximum Temperature for Saturation Tables [k]:', TmaxSat)
+        call askQuestion('Minimum Temperature for Saturation Tables [k]:', TminSat, tmin, tc)
+        call askQuestion('Maximum Temperature for Saturation Tables [k]:', TmaxSat, TminSat, tc)
         call askQuestion_int('Number of Steps for Saturation Tables        :', npsat)
     
         ! Tmin and Tmax ranges are fairly strict, if violated do the following
@@ -750,16 +747,27 @@ contains
     !---------------------------------------------------------------------!
     !                           HELPER FUNCTIONS                          !
     !---------------------------------------------------------------------!
-    subroutine askQuestion(question, response)
+    subroutine askQuestion(question, response, minimum, maximum)
         implicit none
         character(len=*), intent(in) :: question
         double precision, intent(inout) :: response
+        double precision, optional, intent(in) :: minimum, maximum
 
         if (response .eq. 0) then
             write(*,*) 'Enter - ', question
             read(*,*) response
         else
             write(*,*) question, response
+        end if
+        
+        if (present(minimum) .and. response .lt. minimum) then
+            write(*,*) response, 'below below minimum of', minimum, 'this will be used instead'
+            response = minimum
+        end if
+        
+        if (present(maximum) .and. response .gt. maximum) then
+            write(*,*) response, 'above maximum of', maximum, 'this will be used instead'
+            response = maximum
         end if
     end subroutine askQuestion
 
@@ -805,7 +813,7 @@ contains
 !       ierr > 0   : error             : calculations not possible,
 !       ierr < 0   : warning           : results may be questionable
         
-        if (ierr .lt. 0) then
+        if (ierr .gt. 0) then
             write (*,*) herr
             call exit(-1)
         end if

@@ -43,49 +43,55 @@ endif()
 # Options
 SET (USE_OPENMP OFF CACHE BOOL "Use OpenMP")
 
-find_package(PythonInterp REQUIRED)
-
 #####################
 # CONFIGURE REFPROP #
 #####################
 
-set(REFPROP_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Refprop code location")
+# See if we can find REFPROP
+if (WIN32)
+  # Set locations to store output
+  set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
+  set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}")
+  
+  # Refprop (new version) is a 64 bit binary
+  find_path(REFPROP_BASE_PATH "REFPRP64.dll" "c:/program files/REFPROP" "c:/program files (x86)/REFPROP" "c:/REFPROP")
+  message(STATUS "REFPROP Path: ${REFPROP_BASE_PATH}")
+endif()
+
+
+
+if (NOT DEFINED REFPROP_BASE_PATH OR NOT REFPROP_BASE_PATH)
+  set(REFPROP_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Refprop code location")
+  message(STATUS "REFPROP Path: Using REFPROP in source directory")
+endif()
+
+
 
 # Set locations to store output
 set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
 set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}") 
 
-
-# Copy REFPROP fluid files
-message(STATUS "REFPROP: REFPROP fluids found at ${REFPROP_BASE_PATH}, copying fluid files")
-file(COPY "${REFPROP_BASE_PATH}/fluids" DESTINATION "${CMAKE_BINARY_DIR}")
-message(STATUS "REFPROP: Fluid files copied")
-
 # Get fortran sources
-FILE(GLOB refprop_files   "${REFPROP_BASE_PATH}/fortran/*.FOR")
+FILE(GLOB refprop_files "${REFPROP_BASE_PATH}/fortran/*.FOR")
+if (NOT refprop_files)
+    message(FATAL_ERROR "REFPROP Path: fortran code was not found in ${REFPROP_BASE_PATH}/fortran/")
+endif()
 
 # Remove non-required items
 LIST(REMOVE_ITEM refprop_files
-"${REFPROP_BASE_PATH}/fortran/COMMONS.FOR" # include file
-"${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"  # include file
-"${REFPROP_BASE_PATH}/fortran/UTILITY.FOR"
-)
+ "${REFPROP_BASE_PATH}/fortran/COMMONS.FOR"
+ "${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"
+ )
 
-# Make a copy of files (which are to be patched)
-message(STATUS "REFPROP: Patching fortran files")
-file(COPY "${REFPROP_BASE_PATH}/fortran/COMMONS.FOR" DESTINATION "${CMAKE_BINARY_DIR}/fortran")
-file(COPY "${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"  DESTINATION "${CMAKE_BINARY_DIR}/fortran")
-file(RENAME "${CMAKE_BINARY_DIR}/fortran/COMMONS.FOR" "${CMAKE_BINARY_DIR}/fortran/commons.for")
-file(RENAME "${CMAKE_BINARY_DIR}/fortran/COMTRN.FOR" "${CMAKE_BINARY_DIR}/fortran/comtrn.for")
+# Copy REFPROP fluid files
+FILE(GLOB fluid_files "${REFPROP_BASE_PATH}/fluids/*.fld")
+if (NOT fluid_files)
+    message(FATAL_ERROR "REFPROP Path: Fluids were not found in ${REFPROP_BASE_PATH}/fluids/")
+endif()
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/patchUtility.py"
-                "${REFPROP_BASE_PATH}/fortran/UTILITY.FOR"
-                "${CMAKE_BINARY_DIR}/UTILITY.FOR")
-
-LIST(APPEND refprop_files "${CMAKE_BINARY_DIR}/UTILITY.FOR")
-
-# Set include directory
-include_directories("${CMAKE_BINARY_DIR}/fortran")
+message(STATUS "REFPROP: REFPROP fluids found at ${REFPROP_BASE_PATH}, copying fluid files")
+file(COPY "${REFPROP_BASE_PATH}/fluids" DESTINATION "${CMAKE_BINARY_DIR}")
+message(STATUS "REFPROP: Fluid files copied")
 
 # Setup build
 include_directories("${REFPROP_BASE_PATH}/fortran")
@@ -93,5 +99,5 @@ include_directories("${REFPROP_BASE_PATH}/fortran")
 # Use common core method
 add_library(REFPROPObjects OBJECT ${refprop_files})
 add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGP.for")
-
 target_compile_options(RGPTableGen PRIVATE -std=f2008 -ffree-form)
+

@@ -171,7 +171,9 @@ contains
 
         call INFO (1,wm,ttp,tnbp,tc,pc,dc,zc,acf,dip,rgas)
         call NAME (1,hnam,hn80,hcasn)
-        call PASSCMN ('ptpn',0,1,0,hstr,ilng,tpp,arr,ierr,herr)
+        call SATT(ttp,x,1,tpp,Dl,Dv,xliq,xvap,e,enthalpy,entropy,conv,conp,speedOsound,ierr,herr)
+        call checkRPError(ierr, herr)
+
         call MAXT (x,tm,pm,Dm,ierr,herr)
         call LIMITS(htyp,x,tmin,tmax,Dmax,pmax)
 
@@ -325,10 +327,10 @@ contains
 
         ! Get pressure step
         q=1
-        call TQFLSH (TminSat,q,x,kq,PminSat,density,Dl,Dv,x,y,e,enthalpy,entropy,conv,conp,speedOsound,ierr,herr)
+        call TQFLSH (TminSat,q,x,kq,PminSat,density,Dl,Dv,xliq,xvap,e,enthalpy,entropy,conv,conp,speedOsound,ierr,herr)
         call checkRPError(ierr, herr)
 
-        call TQFLSH (TmaxSat,q,x,kq,PmaxSat,density,Dl,Dv,x,y,e,enthalpy,entropy,conv,conp,speedOsound,ierr,herr)
+        call TQFLSH (TmaxSat,q,x,kq,PmaxSat,density,Dl,Dv,xliq,xvap,e,enthalpy,entropy,conv,conp,speedOsound,ierr,herr)
         call checkRPError(ierr, herr)
 
         pstepsat = (Pmaxsat-Pminsat)/REAL(npsat-1)
@@ -747,7 +749,7 @@ contains
     !---------------------------------------------------------------------!
     !                           HELPER FUNCTIONS                          !
     !---------------------------------------------------------------------!
-    subroutine askQuestion(question, response, minimum, maximum)
+    recursive subroutine askQuestion(question, response, minimum, maximum)
         implicit none
         character(len=*), intent(in) :: question
         double precision, intent(inout) :: response
@@ -759,26 +761,38 @@ contains
         else
             write(*,*) question, response
         end if
-        
+
         if (present(minimum) .and. response .lt. minimum) then
-            write(*,*) response, 'below below minimum of', minimum, 'this will be used instead'
-            response = minimum
+            write(*,*) response, 'below below minimum of', minimum
+            response = 0
+            call askQuestion(question, response, minimum, maximum)
         end if
-        
+
         if (present(maximum) .and. response .gt. maximum) then
-            write(*,*) response, 'above maximum of', maximum, 'this will be used instead'
-            response = maximum
+            write(*,*) response, 'above maximum of', maximum
+            response = 0
+            call askQuestion(question, response, minimum, maximum)
         end if
     end subroutine askQuestion
 
-    subroutine askQuestion_int(question, response)
+    recursive subroutine askQuestion_int(question, response)
         implicit none
         character(len=*), intent(in) :: question
         integer, intent(inout) :: response
+        character*(200) :: line
+        integer ios
 
         if (response .eq. 0) then
             write(*,*) 'Enter - ', question
-            read(*,*) response
+
+            read(*,'(a)')line
+            read(line,*,iostat=ios) response
+
+            if (ios>0) then
+                response = 0
+                write(*,*) line, 'was not a valid integer'
+                call askQuestion_int(question, response)
+            endif
         else
             write(*,*) question, response
         end if
@@ -812,9 +826,9 @@ contains
 !       ierr value : flash resulted in : the results are
 !       ierr > 0   : error             : calculations not possible,
 !       ierr < 0   : warning           : results may be questionable
-        
+
         if (ierr .gt. 0) then
-            write (*,*) herr
+            write (0,*) herr
             call exit(-1)
         end if
     end subroutine checkRPError
@@ -824,99 +838,109 @@ contains
         implicit none
 
         ! allocate 2D array
-        write (*,*) 'Allocating superheat array...'
+        write (*,*) 'Allocating superheat array... size:', np, nt
         ALLOCATE (t(nt), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 001'
+        call checkAllocError(AllocStatus, 001)
         ALLOCATE (p(np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 002'
+        call checkAllocError(AllocStatus, 002)
         ALLOCATE (h(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 003'
+        call checkAllocError(AllocStatus, 003)
         ALLOCATE (w(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 004'
+        call checkAllocError(AllocStatus, 004)
         ALLOCATE (v(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 005'
+        call checkAllocError(AllocStatus, 005)
         ALLOCATE (cv(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 006'
+        call checkAllocError(AllocStatus, 006)
         ALLOCATE (cp(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 007'
+        call checkAllocError(AllocStatus, 007)
         ALLOCATE (dPdv(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 008'
+        call checkAllocError(AllocStatus, 008)
         ALLOCATE (s(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 009'
+        call checkAllocError(AllocStatus, 009)
         ALLOCATE (eta(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 010'
+        call checkAllocError(AllocStatus, 010)
         ALLOCATE (tcx(nt,np), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 011'
+        call checkAllocError(AllocStatus, 011)
 
         ! allocate 1D array
         nsat = np
         ALLOCATE (tsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 012'
+        call checkAllocError(AllocStatus, 012)
         ALLOCATE (hsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 013'
+        call checkAllocError(AllocStatus, 013)
         ALLOCATE (wsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 014'
+        call checkAllocError(AllocStatus, 014)
         ALLOCATE (vsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 015'
+        call checkAllocError(AllocStatus, 015)
         ALLOCATE (cvsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 016'
+        call checkAllocError(AllocStatus, 016)
         ALLOCATE (cpsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 017'
+        call checkAllocError(AllocStatus, 017)
         ALLOCATE (dPdvsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 018'
+        call checkAllocError(AllocStatus, 018)
         ALLOCATE (ssat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 019'
+        call checkAllocError(AllocStatus, 019)
         ALLOCATE (etasat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 020'
+        call checkAllocError(AllocStatus, 020)
         ALLOCATE (tcxsat(nsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 021'
+        call checkAllocError(AllocStatus, 021)
 
         ALLOCATE (tsat2(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 022'
+        call checkAllocError(AllocStatus, 022)
         ALLOCATE (psat2(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 023'
+        call checkAllocError(AllocStatus, 023)
         ALLOCATE (blank1(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 024'
+        call checkAllocError(AllocStatus, 024)
         ALLOCATE (blank2(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 025'
+        call checkAllocError(AllocStatus, 025)
 
         ALLOCATE (hsatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 026'
+        call checkAllocError(AllocStatus, 026)
         ALLOCATE (wsatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 027'
+        call checkAllocError(AllocStatus, 027)
         ALLOCATE (rhosatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 028'
+        call checkAllocError(AllocStatus, 028)
         ALLOCATE (cvsatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 029'
+        call checkAllocError(AllocStatus, 029)
         ALLOCATE (cpsatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 030'
+        call checkAllocError(AllocStatus, 030)
         ALLOCATE (dPdrhosatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 031'
+        call checkAllocError(AllocStatus, 031)
         ALLOCATE (ssatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 032'
+        call checkAllocError(AllocStatus, 032)
         ALLOCATE (etasatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 033'
+        call checkAllocError(AllocStatus, 033)
         ALLOCATE (tcxsatl(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 034'
+        call checkAllocError(AllocStatus, 034)
 
         ALLOCATE (hsatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 035'
+        call checkAllocError(AllocStatus, 035)
         ALLOCATE (wsatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 036'
+        call checkAllocError(AllocStatus, 036)
         ALLOCATE (rhosatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 037'
+        call checkAllocError(AllocStatus, 037)
         ALLOCATE (cvsatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 038'
+        call checkAllocError(AllocStatus, 038)
         ALLOCATE (cpsatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 039'
+        call checkAllocError(AllocStatus, 039)
         ALLOCATE (dPdrhosatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 040'
+        call checkAllocError(AllocStatus, 040)
         ALLOCATE (ssatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 041'
+        call checkAllocError(AllocStatus, 041)
         ALLOCATE (etasatv(npsat), STAT = AllocStatus)
-        if (AllocStatus /= 0) write (*,*)'out of memory 042'
-        ALLOCATE (tcxsatv(npsat), STAT = AllocStatus) 
-        if (AllocStatus /= 0) write (*,*)'out of memory 043'
+        call checkAllocError(AllocStatus, 042)
+        ALLOCATE (tcxsatv(npsat), STAT = AllocStatus)
+        call checkAllocError(AllocStatus, 043)
     end subroutine allocateArrays
+
+    subroutine checkAllocError(AllocStatus, MemoryUnit)
+        integer, intent(in) :: AllocStatus, MemoryUnit
+
+        if (AllocStatus /= 0) then
+            write(0,'(a, I2)') 'Out of memory for memory unit', MemoryUnit
+            call exit(-1)
+        endif
+
+    end subroutine checkAllocError
 
 end program RGP

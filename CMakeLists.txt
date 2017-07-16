@@ -61,19 +61,6 @@ if (NOT USE_INSTALLED_REFPROP OR NOT DEFINED REFPROP_BASE_PATH OR NOT REFPROP_BA
   message(STATUS "REFPROP Path: Using REFPROP in source directory")
 endif()
 
-# Get fortran sources
-FILE(GLOB refprop_files "${REFPROP_BASE_PATH}/fortran/*.FOR")
-if (NOT refprop_files)
-    message(FATAL_ERROR "REFPROP Path: fortran code was not found in ${REFPROP_BASE_PATH}/fortran/")
-endif()
-
-# Remove non-required items
-LIST(REMOVE_ITEM refprop_files
- "${REFPROP_BASE_PATH}/fortran/COMMONS.FOR"
- "${REFPROP_BASE_PATH}/fortran/commons.for"
- "${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"
- )
-
 # Copy REFPROP fluid files
 FILE(GLOB fluid_files "${REFPROP_BASE_PATH}/fluids/*.fld")
 if (NOT fluid_files)
@@ -88,7 +75,36 @@ message(STATUS "REFPROP: Fluid files copied")
 include_directories("${REFPROP_BASE_PATH}/fortran")
 
 # Use common core method
-add_library(REFPROPObjects OBJECT ${refprop_files})
+add_library(REFPROPObjects OBJECT 
+"${REFPROP_BASE_PATH}/fortran/CMNS.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_ANC.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_BWR.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_CPP.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_DE.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_ECS.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_FEQ.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_MLT.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_PH0.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_PR.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_QUI.FOR"
+"${REFPROP_BASE_PATH}/fortran/CORE_STN.FOR"
+"${REFPROP_BASE_PATH}/fortran/FLASH2.FOR"
+"${REFPROP_BASE_PATH}/fortran/FLSH_SUB.FOR"
+"${REFPROP_BASE_PATH}/fortran/IDEALGAS.FOR"
+"${REFPROP_BASE_PATH}/fortran/MIX_AGA8.FOR"
+"${REFPROP_BASE_PATH}/fortran/MIX_HMX.FOR"
+"${REFPROP_BASE_PATH}/fortran/PASS_FTN.FOR"
+"${REFPROP_BASE_PATH}/fortran/PROP_SUB.FOR"
+"${REFPROP_BASE_PATH}/fortran/REALGAS.FOR"
+"${REFPROP_BASE_PATH}/fortran/SAT_SUB.FOR"
+"${REFPROP_BASE_PATH}/fortran/SETUP.FOR"
+"${REFPROP_BASE_PATH}/fortran/SETUP2.FOR"
+"${REFPROP_BASE_PATH}/fortran/TRNS_ECS.FOR"
+"${REFPROP_BASE_PATH}/fortran/TRNS_TCX.FOR"
+"${REFPROP_BASE_PATH}/fortran/TRNS_VIS.FOR"
+"${REFPROP_BASE_PATH}/fortran/TRNSP.FOR"
+"${REFPROP_BASE_PATH}/fortran/UTILITY.FOR")
+
 add_executable(RGPTableGen $<TARGET_OBJECTS:REFPROPObjects> "${CMAKE_CURRENT_SOURCE_DIR}/RGP.for")
 target_compile_options(RGPTableGen PRIVATE -std=f2008 -ffree-form)
 

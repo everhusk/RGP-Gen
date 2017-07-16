@@ -48,28 +48,18 @@ SET (USE_OPENMP OFF CACHE BOOL "Use OpenMP")
 #####################
 
 # See if we can find REFPROP
+option(USE_INSTALLED_REFPROP "Use the fortran from REFPROP folder" ON)
 if (WIN32)
-  # Set locations to store output
-  set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
-  set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}")
-  
   # Refprop (new version) is a 64 bit binary
   find_path(REFPROP_BASE_PATH "REFPRP64.dll" "c:/program files/REFPROP" "c:/program files (x86)/REFPROP" "c:/REFPROP")
   message(STATUS "REFPROP Path: ${REFPROP_BASE_PATH}")
 endif()
 
-
-
-if (NOT DEFINED REFPROP_BASE_PATH OR NOT REFPROP_BASE_PATH)
+# REFPROP sources must be located in the current build folder
+if (NOT USE_INSTALLED_REFPROP OR NOT DEFINED REFPROP_BASE_PATH OR NOT REFPROP_BASE_PATH)
   set(REFPROP_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Refprop code location")
   message(STATUS "REFPROP Path: Using REFPROP in source directory")
 endif()
-
-
-
-# Set locations to store output
-set(REFPROP_FLUID_FOLDER "${CMAKE_BINARY_DIR}")
-set(REFPROP_DLL_FILE     "${CMAKE_BINARY_DIR}") 
 
 # Get fortran sources
 FILE(GLOB refprop_files "${REFPROP_BASE_PATH}/fortran/*.FOR")
@@ -80,6 +70,7 @@ endif()
 # Remove non-required items
 LIST(REMOVE_ITEM refprop_files
  "${REFPROP_BASE_PATH}/fortran/COMMONS.FOR"
+ "${REFPROP_BASE_PATH}/fortran/commons.for"
  "${REFPROP_BASE_PATH}/fortran/COMTRN.FOR"
  )
 

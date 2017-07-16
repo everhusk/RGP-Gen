@@ -33,7 +33,7 @@ files.
 
 How to Build (Windows)
 -----
-1) Install mingw with fortran, if this is forign then watch the video available [here](https://www.youtube.com/watch?v=oVfAU1ziOjg
+1) Install mingw with fortran, if this is forign then watch the video available [here](https://www.youtube.com/watch?v=oVfAU1ziOjg)
 2) Install cmake from [here](https://cmake.org/download/)
 3) Make a folder called build in the current directory
 4) Run cmake GUI
